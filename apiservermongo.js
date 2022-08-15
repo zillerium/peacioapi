@@ -26,6 +26,8 @@ request = require("request");
 const bodyParser = require("body-parser");
 var wget = require("node-wget");
 
+var fixed_percentage = 0.1;
+
 const privateKey = fs.readFileSync("privkey.pem", "utf8");
 const certificate = fs.readFileSync("fullchain.pem", "utf8");
 
@@ -34,6 +36,42 @@ const credentials = {
   cert: certificate,
 };
 
+var email_addr_admin = "admin@peac.io";
+var wallet_addr_admin = "0x";
+
+var userSchema = new mongoose.Schema({
+    email_addr : { type: String, default: null},
+    wallet_addr : {type: String, default: null},
+    user_name : {type: String, default: null},  
+    balance : {type: String, default: null}, 
+    currency : {type: String, default: null}, 
+    date_time : {type: Date, default: null},
+    pass_code : {type: String, default: null},
+});
+
+
+var txnSchema = new mongoose.Schema({
+    email_addr_from : { type: String, default: null},
+    wallet_addr_from : {type: String, default: null},
+    user_name_from : {type: String, default: null},  
+
+    email_addr_to : { type: String, default: null},
+    wallet_addr_to : {type: String, default: null},
+    user_name_to : {type: String, default: null},  
+
+    email_addr_admin : { type: String, default: null},
+    wallet_addr_admin : {type: String, default: null},
+    user_name_admin : {type: String, default: null},  
+
+    currency : {type: String, default: null}, 
+    amount : {type: Number, default: null},
+    txn_fee : {type: Number, default: null},
+    date_time : {type: Date, default: null},
+});
+
+var userModel = mongoose.model("userModel", userSchema);
+var txnModel = mongoose.model("txnModel", txnSchema);
+  
 app.get("/ping", function (req, res) {
   console.log('nodejs ccalled');
 	res.json({ message: "pong" });
@@ -59,7 +97,6 @@ app.get("/getDBData", function (req, res) {
   res.json({data: [{"id":1, "price": 40}] });
 });
 
-
 app.post(
   "/addUser",
   asyncHandler(async (req, res, next) => {
@@ -68,19 +105,113 @@ app.post(
     var  user_name = req.body.user_name;
     var  balance = req.body.balance;
     var  currency = req.body.currency;
-    var  date_time = req.body.date_time;
+    var  pass_code = req.body.pass_code;
+    var  date_time = new Date();
     
+    var userJson = {
+        "email_addr": email_addr,
+        "wallet_addr": wallet_addr,
+        "user_name": user_name,
+        "balance": balance,
+        "currency": currency,
+        "pass_code": pass_code,
+        "date_time": date_time,
+    }
 
-        //  custJson[0].custId;
-if (accId != 0) {
-      res.json({ status: "success", accountNumber: accId });
-  } else {
-    res.json({ status: "error" });
-  }
+    await userModel.create(userJson);
+
+    res.status(200).json({ status: "success" });
+   
 
 
   })
 );
+
+app.post(
+    "/addTxn",
+    asyncHandler(async (req, res, next) => {
+    let  email_addr_from = req.body.email_addr_from;
+    let  wallet_addr_from = req.body.wallet_addr_from;
+    let  user_name_from = req.body.user_name_from;
+    let  currency = req.body.currency_from;
+    let  pass_code = req.body.pass_code; // check against db value
+
+    let  date_time = new Date();
+    let  amount = req.body.amount;
+    let  txn_fee = fixed_percentage*amount;
+    
+    let  email_addr_to = req.body.email_addr_to;
+    let  wallet_addr_to = req.body.wallet_addr_to;
+    let  user_name_to = req.body.user_name_to;
+
+    let txnJson = {
+        "email_addr_from": email_addr_from,
+        "email_addr_to": email_addr_to,
+        "email_addr_admin": email_addr_admin,
+        "wallet_addr_from": wallet_addr_from,
+        "wallet_addr_to": wallet_addr_to,
+        "wallet_addr_admin": wallet_addr_admin,
+        "user_name_from": user_name_from,
+        "user_name_to": user_name_to,
+        "currency": currency,
+        "amount": amount,
+        "date_time": date_time,
+        "txn_fee": txn_fee,
+    };
+
+    let filterJsonSender = {"email_addr": email_addr_from};
+    try {
+        let userJsonSender = await userModel.findOne(filterJsonSender);
+        if (!(userJsonSender)) {
+            res.status(400).json({ status: "error", "msg": "email not found "+ email_addr_from});
+        }
+
+    } catch (err) {
+        res.status(400).json({ status: "error", "msg": "db error "+ err});
+    }
+
+    let filterJsonReceiver = {"email_addr": email_addr_to};
+    let userJsonReceiver = await userModel.findOne(filterJsonReceiver);
+
+    if (!(userJsonReceiver)) {
+        res.status(400).json({ status: "error", "msg": "email not found "+ email_addr_to});
+    } 
+
+    let filterJsonAdmin = {"email_addr": email_addr_admin};
+    let userJsonAdmin = await userModel.findOne(filterJsonAdmin);
+
+    if (!(userJsonAdmin)) {
+        res.status(400).json({ status: "error", "msg": "email not found "+ email_addr_admin});
+    }
+
+    if (userJsonSender.balance >= (amount+txn_fee)) {
+        let newBalanceSender = userJsonSender.balance - txn_fee - amount;
+        let updateJsonSender = { "balance" : newBalanceSender};
+        await updateUserDB(filterJsonSender, updateJsonSender);
+    
+    } else {
+        res.status(400).json({ status: "error", "msg": "balance too low "+ userRec.balance + " for " + amount_from});
+    }
+
+    let newBalanceReceiver = userJsonReceiver.balance + amount;
+    let updateJsonReceiver = { "balance" : newBalanceReceiver};
+    
+    await userModel.findOneAndUpdate(filterJsonReceiver, updateJsonReceiver);
+
+    let newBalanceAdmin = userJsonAdmin.balance + txn_fee;
+    let updateJsonAdmin = { "balance" : newBalanceAdmin};
+    
+    await userModel.findOneAndUpdate(filterJsonAdmin, updateJsonAdmin);
+    await txnModel.create(txnJson);
+
+    res.status(200).json({ status: "success"});
+  
+         
+    })
+  );
+
+ 
+
 
 //app.get("/getDBData", function (req, res) {
 app.post("/getDBData", cors(),
