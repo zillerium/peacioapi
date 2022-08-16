@@ -21,6 +21,7 @@ app.options('*', cors());
 
 const asyncHandler = require("express-async-handler");
 const result = require("dotenv").config();
+const mongoose = require('mongoose');
 
 request = require("request");
 const bodyParser = require("body-parser");
@@ -71,6 +72,11 @@ var txnSchema = new mongoose.Schema({
 
 var userModel = mongoose.model("userModel", userSchema);
 var txnModel = mongoose.model("txnModel", txnSchema);
+
+
+ 
+mongoose.connect('mongodb://127.0.0.1:27017/peacio');
+
   
 app.get("/ping", function (req, res) {
   console.log('nodejs ccalled');
@@ -97,9 +103,28 @@ app.get("/getDBData", function (req, res) {
   res.json({data: [{"id":1, "price": 40}] });
 });
 
+function addTxnDB (txnRec) {
+    var txnCreate = new txnModel(txnRec);
+      console.log(txnCreate);
+      txnCreate.save(function(err, doc){
+          if(err) throw err;
+           console.log("db txn done");
+        });
+  }
+  
+  function addUserDB (userRec) {
+    var userCreate = new userModel(userRec);
+      console.log(userCreate);
+      userCreate.save(function(err, doc){
+          if(err) throw err;
+           console.log("db user done");
+        });
+  }
+
 app.post(
   "/addUser",
   asyncHandler(async (req, res, next) => {
+      console.log("log -- " + JSON.stringify(req))
     var  email_addr = req.body.email_addr;
     var  wallet_addr = req.body.wallet_addr;
     var  user_name = req.body.user_name;
@@ -118,7 +143,8 @@ app.post(
         "date_time": date_time,
     }
 
-    await userModel.create(userJson);
+   // await userModel.save(userJson);
+    addUserDB(userJson);
 
     res.status(200).json({ status: "success" });
    
@@ -202,8 +228,9 @@ app.post(
     let updateJsonAdmin = { "balance" : newBalanceAdmin};
     
     await userModel.findOneAndUpdate(filterJsonAdmin, updateJsonAdmin);
-    await txnModel.create(txnJson);
-
+   // await txnModel.save(txnJson);
+    addTxnDB(txnJson)
+   
     res.status(200).json({ status: "success"});
   
          
