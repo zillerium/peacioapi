@@ -86,25 +86,30 @@ const addPartDB  = async  (
  ) => {
 
 	 let partRec = new partDBRec ({
-		 productId: productId,
-  manName: manName,
-  partNumber: partNumber,
-  manPartNumber: manPartNumber,
-  partDesc: partDesc,
-  partImgUrl: partImgUrl,
-  partTechImgUrl: partTechImgUrl,
-  partSalePrice: partSalePrice,
-  partManPrice: partManPrice,
-  currency: currency,
-  merchantId: merchantId,
-  merchantName: merchantName,
-  deliveryCharge: deliveryCharge
-});
-console.log(partRec);
-
+	    productId: productId,
+            manName: manName,
+            partNumber: partNumber,
+            manPartNumber: manPartNumber,
+            partDesc: partDesc,
+            partImgUrl: partImgUrl,
+            partTechImgUrl: partTechImgUrl,
+            partSalePrice: partSalePrice,
+            partManPrice: partManPrice,
+            currency: currency,
+            merchantId: merchantId,
+            merchantName: merchantName,
+            deliveryCharge: deliveryCharge
+         });
+         console.log(partRec);
+         let rtn = 0;
 	 await partRec.save( async (err, doc) => {
-            if (err) throw err;
+            if (err) {
+		    throw err;
+		    rtn = 1;
+	    }
 	 })
+
+	 return rtn;
 
 }
 
@@ -140,22 +145,35 @@ app.post("/addPartData", cors(),
   asyncHandler(async (req, res, next) => {
    const productId = req.body.productId;
    const manName = req.body.manName;
-  partNumber,
-  manPartNumber,
-  partDesc,
-  partImgUrl,
-  partTechImgUrl,
-  partSalePrice,
-  partManPrice,
-  currency,
-  merchantId,
-  merchantName,
-  deliveryCharge
- 
-    console.log("keyword " + keyword);
-    let data = {test: 'test'};
+   const partNumber = req.body.partNumber;
+   const manPartNumber = req.body.manPartNumber;
+   const partDesc = req.body.partDesc;
+   const partImgUrl = req.body.partImgUrl;
+   const partTechImgUrl = req.body.partTechImgUrl;
+   const partSalePrice = req.body.partSalePrice;
+   const partManPrice = req.body.partManPrice;
+   const currency = req.body.currency;
+   const merchantId = req.body.merchantId;
+   const merchantName = req.body.merchantName;
+   const deliveryCharge = = req.body.deliveryCharge;
 
-    res.json({data:data})	  
+   let rtn = await addPartDB (
+      productId,
+      manName,
+      partNumber,
+      manPartNumber,
+      partDesc,
+      partImgUrl,
+      partTechImgUrl,
+      partSalePrice,
+      partManPrice,
+      currency,
+      merchantId,
+      merchantName,
+      deliveryCharge
+    );
+
+    res.json({rtn:rtn})	  
   })
 );
 const httpsServer = https.createServer(credentials, app);
