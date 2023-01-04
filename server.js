@@ -71,6 +71,25 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //app.post("/getDBData", function (req, res) {
+const updateRec = async (partRec, dbKey) => {
+
+	var rtn = 0;
+        rtn =              await partDBRec.updateOne(
+		          {'dbKey': dbKey},
+		          {$set: partRec},
+		          )
+                 
+return rtn;
+}
+const insertRec = async (partRec) => {
+	var rtn = 0;
+                rtn = await partRec.save( async (err, doc) => {
+                            return(err ? rtn=1 : rtn=0);
+	                  })
+
+ return rtn;
+}
+
 
 const addPartDB  = async  (
  dbKey,
@@ -91,7 +110,7 @@ const addPartDB  = async  (
   deliveryCharge
  ) => {
 
-	 let partRec = new partDBRec ({
+	 let jsonDB= {
 	    dbKey: dbKey,
 	    productId: productId,
             manName: manName,
@@ -108,37 +127,18 @@ const addPartDB  = async  (
             merchantId: merchantId,
             merchantName: merchantName,
             deliveryCharge: deliveryCharge
-         });
+         };
+	 let partRec = new partDBRec (jsonDB);
          console.log(partRec);
          let rtn = 0;
-          
-         await partDBRec.findOne(
-		 {'dbKey': dbKey},
-		 async (err, doc) => {
-                    if (err ) {
+         var found = false; 
+         found = await partDBRec.findOne({'dbKey': dbKey});
+         if (found) 
+           rtn = await updateRec(jsonDB, dbKey);
+	 else 
+           rtn = await insertRec(partRec);
 
-                  	 await partRec.save( async (err, doc) => {
-                             if (err) {
-		                console.log("error "+ err);
-		                //throw err;
-		                rtn = 1;
-	                      }
-	                  })
-
-		    } 
-	            else
-			 {
-
-                     await partDBRec.updateOne(
-		          {'dbKey': dbKey},
-		          {$set: partRec},
-		          async (err, doc) => {
-                             if (err) rtn=1;
-		           })
-			 }
-		 })
-
-
+         
 	 return rtn;
 
 }
