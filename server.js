@@ -10,10 +10,13 @@ mongoose.connect('mongodb://127.0.0.1:27017/peacio');
 
 var partSchema = new mongoose.Schema({
   productId : { type: Number, default: null},
+  dbKey : {type: String, default: null, unique: true, required: true, index: true},
   manName : {type: String, default: null},
   partNumber : {type: String, default: null},
   manPartNumber : {type: String, default: null},
+  partOption : {type: String, default: null},
   partDesc : {type: String, default: null},
+  partShortDesc : {type: String, default: null},
   partImgUrl : {type: String, default: null},
   partTechImgUrl : {type: String, default: null},
   partSalePrice : {type: Number, default: null},
@@ -70,11 +73,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //app.post("/getDBData", function (req, res) {
 
 const addPartDB  = async  (
+ dbKey,
  productId,
   manName,
   partNumber,
   manPartNumber,
+  partOption,
   partDesc,
+  partShortDesc,
   partImgUrl,
   partTechImgUrl,
   partSalePrice,
@@ -86,11 +92,14 @@ const addPartDB  = async  (
  ) => {
 
 	 let partRec = new partDBRec ({
+	    dbKey: dbKey,
 	    productId: productId,
             manName: manName,
             partNumber: partNumber,
             manPartNumber: manPartNumber,
+            partOption: partOption,
             partDesc: partDesc,
+            partShortDesc: partShortDesc,
             partImgUrl: partImgUrl,
             partTechImgUrl: partTechImgUrl,
             partSalePrice: partSalePrice,
@@ -102,12 +111,33 @@ const addPartDB  = async  (
          });
          console.log(partRec);
          let rtn = 0;
-	 await partRec.save( async (err, doc) => {
-            if (err) {
-		    throw err;
-		    rtn = 1;
-	    }
-	 })
+          
+         await partDBRec.findOne(
+		 {'dbKey': dbKey},
+		 async (err, doc) => {
+                    if (err ) {
+
+                  	 await partRec.save( async (err, doc) => {
+                             if (err) {
+		                console.log("error "+ err);
+		                //throw err;
+		                rtn = 1;
+	                      }
+	                  })
+
+		    } 
+	            else
+			 {
+
+                     await partDBRec.updateOne(
+		          {'dbKey': dbKey},
+		          {$set: partRec},
+		          async (err, doc) => {
+                             if (err) rtn=1;
+		           })
+			 }
+		 })
+
 
 	 return rtn;
 
@@ -132,8 +162,9 @@ app.get("/getDBData1", function (req, res) {
 //app.get("/getDBData", function (req, res) {
 app.post("/getDBData", cors(),
   asyncHandler(async (req, res, next) => {
-   const keyword = req.body.price;
+   const keyword = req.body.keyword;
     
+    console.log(req.body);
     console.log("keyword " + keyword);
     let data = {test: 'test'};
 
@@ -141,28 +172,40 @@ app.post("/getDBData", cors(),
   })
 );
 
-app.post("/addPartData", cors(),
+app.post("/addPartAPI", cors(),
   asyncHandler(async (req, res, next) => {
-   const productId = req.body.productId;
+   const productId = 0;
    const manName = req.body.manName;
    const partNumber = req.body.partNumber;
    const manPartNumber = req.body.manPartNumber;
+   const partOption = req.body.partOption;
    const partDesc = req.body.partDesc;
+   const partShortDesc = req.body.partShortDesc;
    const partImgUrl = req.body.partImgUrl;
    const partTechImgUrl = req.body.partTechImgUrl;
-   const partSalePrice = req.body.partSalePrice;
-   const partManPrice = req.body.partManPrice;
+   const partSalePriceStr = req.body.partSalePrice;
+   const partManPriceStr = req.body.partManPrice;
    const currency = req.body.currency;
-   const merchantId = req.body.merchantId;
+   const merchantIdStr = req.body.merchantId;
    const merchantName = req.body.merchantName;
-   const deliveryCharge = = req.body.deliveryCharge;
+   const deliveryChargeStr = req.body.deliveryCharge;
 
+   const partSalePrice = partSalePriceStr ? parseFloat(partSalePriceStr).toFixed(2) : 0;
+   const partManPrice = partManPriceStr ? parseFloat(partManPriceStr).toFixed(2) : 0;
+   const merchantId = merchantIdStr ? parseInt(merchantIdStr) : 0;
+   const deliveryCharge = deliveryChargeStr ? parseFloat(deliveryChargeStr).toFixed(2) : 0;
+   const dbKey = manName + " " + partNumber;
+   console.log(req.body);
+// let rtn = 9;
    let rtn = await addPartDB (
+      dbKey,
       productId,
       manName,
       partNumber,
       manPartNumber,
+      partOption,
       partDesc,
+      partShortDesc,
       partImgUrl,
       partTechImgUrl,
       partSalePrice,
