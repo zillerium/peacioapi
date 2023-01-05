@@ -154,9 +154,15 @@ app.get("/ping", cors(),
 //  console.log('nodejs ccalled');
 //	res.json({ message: "pong" });
 //});
-app.get("/getDBData1", function (req, res) {
+//app.get("/searchDB", function (req, res) {
+// OCcurl https://peacioapi.com:3000/searchDB/hello%20there
+app.get("/searchDB/:query", cors(),
+  asyncHandler(async (req, res, next) => {
+	  let x = req.params;
+	  console.log(x);
   res.json({data: [{"id":1, "price": 40}] });
-});
+})
+)	
 
 
 //app.get("/getDBData", function (req, res) {
