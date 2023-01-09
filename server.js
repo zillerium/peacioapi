@@ -158,13 +158,50 @@ app.get("/ping", cors(),
 // OCcurl https://peacioapi.com:3000/searchDB/hello%20there
 app.get("/searchDB/:query", cors(),
   asyncHandler(async (req, res, next) => {
-	  let x = req.params;
+	  let x = req.params.query;
+	  let recs = await partDBRec.find({
+		 $or: [
+			 {partDesc: { $regex: '.*' + x  + '.*', $options: 'i' }},
+			 {manName: { $regex: '.*' + x  + '.*', $options: 'i' }},
+			 {partNumber: { $regex: '.*' + x  + '.*', $options: 'i' }},
+			 {partOption: { $regex: '.*' + x  + '.*', $options: 'i' }},
+
+		 ]
+	  
+	  })
 	  console.log(x);
-  res.json({data: [{"id":1, "price": 40}] });
+	  console.log(recs);
+  res.json({data: [recs] });
 })
 )	
 
 
+app.get("/getPart/:query", cors(),
+  asyncHandler(async (req, res, next) => {
+	  let x = req.params.query;
+	  let xstr = "";
+	  if (x) xstr=x.toString();
+	  let json={dbKey: { $regex:  x , $options: 'i' }}
+
+	  let recs = await partDBRec.findOne(json);
+
+	  console.log(json);
+	  console.log(x);
+	  console.log(xstr);
+	  console.log(recs);
+  res.json({data: [recs] });
+})
+)	
+
+
+app.post("/checkout", cors(),
+  asyncHandler(async (req, res, next) => {
+    
+    let data = {url: 'https://peac.io'};
+
+    res.json({data:data})	  
+  })
+);
 //app.get("/getDBData", function (req, res) {
 app.post("/getDBData", cors(),
   asyncHandler(async (req, res, next) => {
@@ -200,7 +237,7 @@ app.post("/addPartAPI", cors(),
    const partManPrice = partManPriceStr ? parseFloat(partManPriceStr).toFixed(2) : 0;
    const merchantId = merchantIdStr ? parseInt(merchantIdStr) : 0;
    const deliveryCharge = deliveryChargeStr ? parseFloat(deliveryChargeStr).toFixed(2) : 0;
-   const dbKey = manName + " " + partNumber;
+   const dbKey = manName + "-" + partNumber;
    console.log(req.body);
 // let rtn = 9;
    let rtn = await addPartDB (
