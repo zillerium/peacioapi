@@ -27,7 +27,30 @@ var partSchema = new mongoose.Schema({
   deliveryCharge : {type: Number, default: null},
 });
 
+var houseSchema = new mongoose.Schema({
+  houseId : { type: Number, default: null},
+  dbKey : {type: String, default: null, unique: true, required: true, index: true},
+  assetOwnerName : {type: String, default: null},
+  assetAddress : {type: String, default: null},
+  assetValue : {type: Number, default: null},
+  assetNumberShares : {type: Number, default: null},
+  hasTenant : {type: Boolean, default: null},
+  hasGarden : {type: Boolean, default: null},
+  hasParking : {type: Boolean, default: null},
+  assetImageUrl : {type: String, default: null},
+  assetUrl : {type: String, default: null},
+  assetIncome : {type: Number, default: null},
+  assetYield : {type: Number, default: null},
+  assetNumberBathrooms : {type: Number, default: null},
+  assetNumberBedrooms : {type: Number, default: null},
+  assetHouseType : {type: String, default: null},
+  hasDoubleGlazing : {type: Boolean, default: null},
+  assetRiskRating : {type: Number, default: null},
+  assetPreferredNotary : {type: String, default: null},
+});
+
 var partDBRec = mongoose.model("part", partSchema);
+var houseDBRec = mongoose.model("house", houseSchema);
 
 const fs = require("fs");
 const http = require("http");
@@ -142,6 +165,63 @@ const addPartDB  = async  (
 	 return rtn;
 
 }
+const addHouseDB  = async  (
+  houseId,
+  dbKey,
+  assetOwnerName,
+  assetAddress,
+  assetValue,
+  assetNumberShares,
+  hasTenant,
+  hasGarden,
+  hasParking,
+  assetImageUrl,
+  assetUrl,
+  assetIncome,
+  assetYield,
+  assetNumberBathrooms,
+  assetNumberBedrooms,
+  assetHouseType,
+  hasDoubleGlazing,
+  assetRiskRating,
+  assetPreferredNotary,
+ ) => {
+
+	 let jsonDB= {
+		 houseId: houseId,
+  dbKey: dbKey,
+  assetOwnerName: assetOwnerName,
+  assetAddress: assetAddress,
+  assetValue: assetValue,
+  assetNumberShares: assetNumberShares,
+  hasTenant: hasTenant,
+  hasGarden: hasGarden,
+  hasParking: hasParking,
+  assetImageUrl: assetImageUrl,
+  assetUrl: assetUrl,
+  assetIncome: assetIncome,
+  assetYield: assetYield,
+  assetNumberBathrooms: assetNumberBathrooms,
+  assetNumberBedrooms: assetNumberBedrooms,
+  assetHouseType: assetHouseType,
+  hasDoubleGlazing: hasDoubleGlazing,
+  assetRiskRating: assetRiskRating,
+  assetPreferredNotary: assetPreferredNotary,
+         };
+	 let houseRec = new houseDBRec (jsonDB);
+         console.log(houseRec);
+         let rtn = 0;
+         var found = false; 
+         found = await houseDBRec.findOne({'dbKey': dbKey});
+         if (found) 
+           rtn = await updateRec(jsonDB, dbKey);
+	 else 
+           rtn = await insertRec(houseRec);
+
+         
+	 return rtn;
+
+}
 
 app.get("/ping", cors(),
   asyncHandler(async (req, res, next) => {
@@ -175,6 +255,20 @@ app.get("/searchDB/:query", cors(),
 })
 )	
 
+app.get("/searchHouseDB/:query", cors(),
+  asyncHandler(async (req, res, next) => {
+	  let x = req.params.query;
+	  let recs = await houseDBRec.find({
+		 $or: [
+			 {assetAddress: { $regex: '.*' + x  + '.*', $options: 'i' }},
+
+		 ]
+	  
+	  })
+	  console.log(x);
+	  console.log(recs);
+  res.json({data: [recs] });
+})
 
 app.get("/getPart/:query", cors(),
   asyncHandler(async (req, res, next) => {
@@ -194,10 +288,35 @@ app.get("/getPart/:query", cors(),
 )	
 
 
+app.get("/getHouse/:query", cors(),
+  asyncHandler(async (req, res, next) => {
+	  let x = req.params.query;
+	  let xstr = "";
+	  if (x) xstr=x.toString();
+	  let json={dbKey: { $regex:  x , $options: 'i' }}
+
+	  let recs = await partDBRec.findOne(json);
+
+	  console.log(json);
+	  console.log(x);
+	  console.log(xstr);
+	  console.log(recs);
+  res.json({data: [recs] });
+})
+)
+
 app.post("/checkout", cors(),
   asyncHandler(async (req, res, next) => {
     
     let data = {url: 'https://peac.io'};
+
+    res.json({data:data})	  
+  })
+);
+app.post("/checkouthouse", cors(),
+  asyncHandler(async (req, res, next) => {
+    
+    let data = {url: 'https://flowswap.net'};
 
     res.json({data:data})	  
   })
@@ -215,6 +334,53 @@ app.post("/getDBData", cors(),
   })
 );
 
+app.post("/addHouseAPI", cors(),
+   const houseId = 0;
+   const assetOwnerName = req.body.assetOwnerName;
+   const assetAddress  = req.body.assetAddress;
+   const assetValue = req.body.assetValue;
+   const assetNumberShares = req.body.assetNumberShares;
+   const hasTenant = req.body.hasTenant;
+   const hasGarden = req.body.hasGarden;
+   const hasParking = req.body.hasParking;
+   const assetImageUrl = req.body.assetImageUrl;
+   const assetUrl = req.body.assetUrl;
+   const assetIncome = req.body.assetIncome;
+   const assetYield = req.body.assetYield;
+   const assetNumberBathrooms = req.body.assetNumberBathrooms;
+   const assetNumberBedrooms = req.body.assetNumberBedrooms;
+   const assetHouseType =req.body.assetHouseType;
+   const hasDoubleGlazing = req.body.hasDoubleGlazing;
+   const assetRiskRating = req.body.assetRiskRating;
+   const assetPreferredNotary = req.body.assetPreferredNotary;
+
+   const dbKey = assetAddress;
+   console.log(req.body);
+// let rtn = 9;
+   let rtn = await addHouseDB (
+  houseId,
+  dbKey,
+  assetOwnerName,
+  assetAddress,
+  assetValue,
+  assetNumberShares,
+  hasTenant,
+  hasGarden,
+  hasParking,
+  assetImageUrl,
+  assetUrl,
+  assetIncome,
+  assetYield,
+  assetNumberBathrooms,
+  assetNumberBedrooms,
+  assetHouseType,
+  hasDoubleGlazing,
+  assetRiskRating,
+    );
+
+    res.json({rtn:rtn})	  
+  })
+);
 app.post("/addPartAPI", cors(),
   asyncHandler(async (req, res, next) => {
    const productId = 0;
@@ -263,9 +429,10 @@ app.post("/addPartAPI", cors(),
   })
 );
 const httpsServer = https.createServer(credentials, app);
-//const httpServer = http.createServer(app);
+const httpServer = http.createServer(app);
 
 httpsServer.listen(3000, () => {
+//httpServer.listen(3000, () => {
   console.log("HTTPS Server running on port 3000");
 });
 	
