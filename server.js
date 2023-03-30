@@ -47,6 +47,7 @@ var houseSchema = new mongoose.Schema({
   hasDoubleGlazing : {type: Boolean, default: null},
   assetRiskRating : {type: Number, default: null},
   assetPreferredNotary : {type: String, default: null},
+  currency: {type: String, default: null},
 });
 
 var partDBRec = mongoose.model("part", partSchema);
@@ -185,6 +186,7 @@ const addHouseDB  = async  (
   hasDoubleGlazing,
   assetRiskRating,
   assetPreferredNotary,
+  currency,
  ) => {
 
 	 let jsonDB= {
@@ -207,6 +209,7 @@ const addHouseDB  = async  (
   hasDoubleGlazing: hasDoubleGlazing,
   assetRiskRating: assetRiskRating,
   assetPreferredNotary: assetPreferredNotary,
+  currency: currency,
          };
 	 let houseRec = new houseDBRec (jsonDB);
          console.log(houseRec);
@@ -353,6 +356,7 @@ app.post("/addHouseAPI", cors(),
    const hasDoubleGlazing = req.body.hasDoubleGlazing;
    const assetRiskRating = req.body.assetRiskRating;
    const assetPreferredNotary = req.body.assetPreferredNotary;
+   const currency = req.body.currency;
 
    const dbKey = assetAddress;
    console.log(req.body);
@@ -376,6 +380,7 @@ app.post("/addHouseAPI", cors(),
   assetHouseType,
   hasDoubleGlazing,
   assetRiskRating,
+  currency,
     );
 
     res.json({rtn:rtn})	  
